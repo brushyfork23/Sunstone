@@ -135,6 +135,10 @@ public:
     void print(const String &s) {
         tft.print(s);
     }
+
+    bool isOn() {
+        return displayOn;
+    }
 };
 
 #endif
