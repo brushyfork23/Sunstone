@@ -18,7 +18,7 @@ Display display;
 GPS gps;
 
 // GPS display refresh timer
-#define GPS_TIMER_MICROS 5000000 // 5 seconds
+#define GPS_TIMER_MICROS 1000000 // 1 second
 hw_timer_t* gpsTimer = NULL;
 volatile SemaphoreHandle_t gpsTimerSemaphore;
 void ARDUINO_ISR_ATTR onGpsTimer(){
@@ -36,7 +36,6 @@ void setup() {
 
     // Initialize TFT Display and Battery Monitor
     display.setup();
-    display.print("Sunstone");
 
     // Initialize GPS
     gps.setup();
@@ -62,16 +61,9 @@ void loop() {
         timerStart(gpsTimer);
       }
       if (xSemaphoreTake(gpsTimerSemaphore, 0) == pdTRUE) {
-        // fetch the latest GPS data
-        Serial.print(F("Time: "));
-        Serial.println(gps.time());
-        Serial.print("Fix: ");
-        Serial.println((int)gps.hasFix());
-        Serial.print("Lat: ");
-        Serial.println(gps.lat());
-        Serial.print("Lon: ");
-        Serial.println(gps.lon());
-        Serial.println();
+        display.drawFix(gps.hasFix());
+        display.drawTime(gps.time());
+        display.drawLocation(gps.lat(), gps.lon());
       }
     }
 }

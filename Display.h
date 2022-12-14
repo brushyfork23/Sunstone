@@ -67,7 +67,7 @@ public:
         tft.setTextColor(ST77XX_WHITE);
         tft.setTextSize(1);
         tft.setTextWrap(true);
-        tft.setCursor(0, 8);
+        tft.setCursor(0, 0);
         Serial.println(F("TFT Display Initialized!"));
     }
 
@@ -119,7 +119,7 @@ public:
 
         // Write battery percent
         if (digits < 3) {
-            tft.fillRect(166,0,(3-digits)*12,12,ST77XX_BLACK);
+            tft.fillRect(166,0,(3-digits)*12,14,ST77XX_BLACK);
         }
         tft.setCursor(214 - ((digits+1) * 12), 0);
         tft.setTextColor(color, ST77XX_BLACK);
@@ -132,13 +132,39 @@ public:
         tft.fillRect(217,1,fillWidth,12,color);
     }
 
-    void print(const String &s) {
-        tft.print(s);
+    void drawFix(bool hasFix) {
+      if(hasFix) {
+        const unsigned char epd_bitmap_navnavigation_icon [] PROGMEM = {
+          0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+          0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+        };
+        tft.drawBitmap(0,0,epd_bitmap_navnavigation_icon,12,14,ST77XX_WHITE);
+      } else {
+        tft.fillRect(0,0,12,14,ST77XX_BLACK);
+      }
+    }
+
+    void drawTime(String time) {
+      tft.setTextColor(ST77XX_WHITE, ST77XX_BLACK);
+      tft.setCursor(50,0);
+      tft.print(time);
+    }
+
+    void drawLocation(String lat, String lon) {
+      tft.setTextColor(ST77XX_WHITE, ST77XX_BLACK);
+      tft.setCursor(12,60);
+      tft.print("Lat: ");
+      tft.print(lat);
+      tft.setCursor(12,78);
+      tft.print("Lon: ");
+      tft.print(lon);
     }
 
     bool isOn() {
         return displayOn;
     }
+
+
 };
 
 #endif
