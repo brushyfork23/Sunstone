@@ -2,7 +2,7 @@
 #define GPS_h
 
 #include <Adafruit_GPS.h>
-#define GPSSerial Serial1 // RX: A0, TX: A1
+#define GPSSerial Serial1
 
 class GPS {
 
@@ -13,6 +13,10 @@ public:
     void setup() {
         Serial.println(F("Initializing GPS"));
         gps.begin(9600);
+        // The TX and RX pins on the Feather ESP32-S2 are GPIO 1 and 2 respectively, but the
+        // defaults for Serial1 are GPIO 17 and 18.  Luckily, we can change the pin assignments
+        // in software, so we don't need to cut any traces for the pins to match up!
+        GPSSerial.setPins(2, 1, -1, -1);
         // request RMC (recommended minimum) and GGA (fix data) including altitude.
         // Can we get away with just PMTK_SET_NMEA_OUTPUT_RMCONLY (minimum recommended only)?
         gps.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
