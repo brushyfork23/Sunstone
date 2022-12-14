@@ -23,6 +23,11 @@ public:
     void loop() {
         // Read new character from GPS module
         gps.read();
+
+        // Parse new data
+        if(gps.newNMEAreceived()) {
+          gps.parse(gps.lastNMEA());
+        }
     }
 
     bool hasFix() {
