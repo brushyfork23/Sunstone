@@ -8,6 +8,7 @@
 // Adafruit LC709203F - Battery Monitor
 // Adafruit ST7735 and ST7789 Library - TFT Display
 // Adafruit GPS Library - GPS
+// Adafruit LIS2MDL - Compass
 
 // Manually install this library:
 // http://www.airspayce.com/mikem/arduino/RadioHead/ - LoRa
@@ -27,24 +28,21 @@ GPS gps;
 #include "LoRa.h"
 LoRa lora;
 
+// Compass
+#include "Compass.h"
+Compass compass;
+
 // GPS display refresh timer
-// How often the GPS coordinates and clock are updated,
-// _not_ how often they are fetched and parsed.
-#define GPS_TIMER_MICROS 1000000 // 1 second
-hw_timer_t* gpsTimer = NULL;
-volatile SemaphoreHandle_t gpsTimerSemaphore;
-void ARDUINO_ISR_ATTR onGpsTimer(){
-  xSemaphoreGiveFromISR(gpsTimerSemaphore, NULL);
-}
+const long displayUpdateGPSInterval = 1000; // milliseconds between refreshing displayed GPS location and clock
+unsigned long displayPreviouslyUpdatedGPS = 0; // the time at which the displayed was last updated
 
 // LoRa friend ping timer
-// How often we query our first friend for their location.
-#define LORA_TIMER_MICROS 5000000 // 50 seconds
-hw_timer_t* loraTimer = NULL;
-volatile SemaphoreHandle_t loraTimerSemaphore;
-void ARDUINO_ISR_ATTR onLoraTimer(){
-  xSemaphoreGiveFromISR(loraTimerSemaphore, NULL);
-}
+const long loraFindFriendInterval = 60000; // milliseconds between pinging a friend for their location
+unsigned long loraPreviouslyFoundFriend = 0; // the time at which a friend was last pinged
+
+// Compass display refresh timer
+const long displayUpdateCompassInterval = 100; // miulliseconds between refreshing displayed compass
+unsigned long displayPreviouslyUpdatedCompass = 0; // the time at which the display was last updated
 
 void setup() {
     delay(500);
@@ -64,19 +62,8 @@ void setup() {
     // Initialize LoRa
     lora.setup();
 
-    // Initialize GPS display refresh timer
-    gpsTimerSemaphore = xSemaphoreCreateBinary();
-    gpsTimer = timerBegin(1, 80, true); // prescaler of 80 configures alarm time to microseconds
-    timerAttachInterrupt(gpsTimer, &onGpsTimer, true);
-    timerAlarmWrite(gpsTimer, GPS_TIMER_MICROS, true);
-    timerAlarmEnable(gpsTimer);
-
-    // Initialize LoRa ping timer
-    loraTimerSemaphore = xSemaphoreCreateBinary();
-    loraTimer = timerBegin(2, 80, true); // prescaler of 80 configures alarm time to microseconds
-    timerAttachInterrupt(loraTimer, &onLoraTimer, true);
-    timerAlarmWrite(loraTimer, LORA_TIMER_MICROS, true);
-    timerAlarmEnable(loraTimer);
+    // Initialize Compass
+    compass.setup();
 
     Serial.println(F("Setup Complete!"));
     delay(200);
@@ -86,24 +73,29 @@ void loop() {
     gps.loop();
     display.loop();
     lora.loop();
+    compass.loop();
+
+    unsigned long currentMillis = millis();
 
     if (display.isOn()) {
       // Update displayed GPS location
-      if (!timerStarted(gpsTimer)) {
-        timerStart(gpsTimer);
-      }
-      if (xSemaphoreTake(gpsTimerSemaphore, 0) == pdTRUE) {
+      if (currentMillis - displayPreviouslyUpdatedGPS >= displayUpdateGPSInterval) {
+        displayPreviouslyUpdatedGPS = currentMillis;
         display.drawFix(gps.hasFix());
         display.drawTime(gps.time());
         display.drawLocation(gps.lat(), gps.lon());
       }
+
+      // Update displayed compass
+      if (currentMillis - displayPreviouslyUpdatedCompass >= displayUpdateCompassInterval) {
+        displayPreviouslyUpdatedCompass = currentMillis;
+        display.drawCompass(compass.heading);
+      }
     }
 
     // Request the location of the first friend in our list
-    if (!timerStarted(loraTimer)) {
-      timerStart(loraTimer);
-    }
-    if (xSemaphoreTake(loraTimerSemaphore, 0) == pdTRUE) {
+    if (currentMillis - loraPreviouslyFoundFriend >= loraFindFriendInterval) {
+      loraPreviouslyFoundFriend = currentMillis;
       lora.requestLocationFromDevice(friendAddresses[0]);
     }
 }
