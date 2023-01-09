@@ -2,6 +2,7 @@
 #define Display_h
 
 // Battery Monitor Refresh Timer
+#define BATTERY_TIMER_ID 0 // Must be unique amongst all hardware timers
 #define BATTERY_TIMER_MICROS 5000000 // update battery display every 5 seconds
 
 // Battery Monitor
@@ -47,7 +48,7 @@ public:
         battery.setPackSize(BATTERY_PACK_SIZE);
         // Set up recurring query of battery voltage
         batteryTimerSemaphore = xSemaphoreCreateBinary();
-        batteryTimer = timerBegin(0, 80, true); // prescaler of 80 configures alarm time to microseconds
+        batteryTimer = timerBegin(BATTERY_TIMER_ID, 80, true); // prescaler of 80 configures alarm time to microseconds
         timerAttachInterrupt(batteryTimer, &onBatteryTimer, true);
         timerAlarmWrite(batteryTimer, BATTERY_TIMER_MICROS, true);
         timerAlarmEnable(batteryTimer);

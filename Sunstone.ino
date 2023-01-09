@@ -8,12 +8,16 @@
 // Adafruit LC709203F - Battery Monitor
 // Adafruit ST7735 and ST7789 Library - TFT Display
 // Adafruit GPS Library - GPS
+// Chrono - Timing
 
 // Manually install this library:
 // http://www.airspayce.com/mikem/arduino/RadioHead/ - LoRa
 
 // Default list of friends' device addresses
 uint8_t friendAddresses[] = {2};
+
+// Timing
+#include <LightChrono.h>
 
 // Display
 #include "Display.h"
@@ -28,23 +32,12 @@ GPS gps;
 LoRa lora;
 
 // GPS display refresh timer
-// How often the GPS coordinates and clock are updated,
-// _not_ how often they are fetched and parsed.
-#define GPS_TIMER_MICROS 1000000 // 1 second
-hw_timer_t* gpsTimer = NULL;
-volatile SemaphoreHandle_t gpsTimerSemaphore;
-void ARDUINO_ISR_ATTR onGpsTimer(){
-  xSemaphoreGiveFromISR(gpsTimerSemaphore, NULL);
-}
+const long displayUpdateGPSInterval = 1000; // milliseconds between refreshing displayed GPS location and clock
+LightChrono gpsDisplayUpdateTimer;
 
 // LoRa friend ping timer
-// How often we query our first friend for their location.
-#define LORA_TIMER_MICROS 5000000 // 50 seconds
-hw_timer_t* loraTimer = NULL;
-volatile SemaphoreHandle_t loraTimerSemaphore;
-void ARDUINO_ISR_ATTR onLoraTimer(){
-  xSemaphoreGiveFromISR(loraTimerSemaphore, NULL);
-}
+const long loraFindFriendInterval = 60000; // milliseconds between pinging a friend for their location
+LightChrono loraFindFriendTimer;
 
 void setup() {
     delay(500);
@@ -65,18 +58,10 @@ void setup() {
     lora.setup();
 
     // Initialize GPS display refresh timer
-    gpsTimerSemaphore = xSemaphoreCreateBinary();
-    gpsTimer = timerBegin(1, 80, true); // prescaler of 80 configures alarm time to microseconds
-    timerAttachInterrupt(gpsTimer, &onGpsTimer, true);
-    timerAlarmWrite(gpsTimer, GPS_TIMER_MICROS, true);
-    timerAlarmEnable(gpsTimer);
+    gpsDisplayUpdateTimer.start();
 
     // Initialize LoRa ping timer
-    loraTimerSemaphore = xSemaphoreCreateBinary();
-    loraTimer = timerBegin(2, 80, true); // prescaler of 80 configures alarm time to microseconds
-    timerAttachInterrupt(loraTimer, &onLoraTimer, true);
-    timerAlarmWrite(loraTimer, LORA_TIMER_MICROS, true);
-    timerAlarmEnable(loraTimer);
+    loraFindFriendTimer.start();
 
     Serial.println(F("Setup Complete!"));
     delay(200);
@@ -89,10 +74,7 @@ void loop() {
 
     if (display.isOn()) {
       // Update displayed GPS location
-      if (!timerStarted(gpsTimer)) {
-        timerStart(gpsTimer);
-      }
-      if (xSemaphoreTake(gpsTimerSemaphore, 0) == pdTRUE) {
+      if(gpsDisplayUpdateTimer.hasPassed(displayUpdateGPSInterval, true)) {
         display.drawFix(gps.hasFix());
         display.drawTime(gps.time());
         display.drawLocation(gps.lat(), gps.lon());
@@ -100,10 +82,7 @@ void loop() {
     }
 
     // Request the location of the first friend in our list
-    if (!timerStarted(loraTimer)) {
-      timerStart(loraTimer);
-    }
-    if (xSemaphoreTake(loraTimerSemaphore, 0) == pdTRUE) {
+    if (loraFindFriendTimer.hasPassed(loraFindFriendInterval, true)) {
       lora.requestLocationFromDevice(friendAddresses[0]);
     }
 }
