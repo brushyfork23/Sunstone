@@ -16,13 +16,10 @@
 #define LORA_CS_PIN 6 // "D" on the LoRa board
 #define LORA_RST_PIN 9 // "C" on the LoRa board
 
-
-RH_RF95 rf95(LORA_CS_PIN, LORA_IRQ_PIN);
-
 class LoRa {
 
 private:
-    
+    RH_RF95 rf95 = RH_RF95(LORA_CS_PIN, LORA_IRQ_PIN);
 
 public:
     void setup() {
