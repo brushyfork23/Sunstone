@@ -19,7 +19,7 @@
 class LoRa {
 
 private:
-  RH_RF95 rf95 = RH_RF95(LORA_CS_PIN, LORA_IRQ_PIN);
+    RH_RF95 rf95 = RH_RF95(LORA_CS_PIN, LORA_IRQ_PIN);
 
 public:
     void setup() {

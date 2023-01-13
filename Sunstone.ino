@@ -9,12 +9,16 @@
 // Adafruit ST7735 and ST7789 Library - TFT Display
 // Adafruit GPS Library - GPS
 // Adafruit LIS2MDL - Compass
+// Chrono - Timing
 
 // Manually install this library:
 // http://www.airspayce.com/mikem/arduino/RadioHead/ - LoRa
 
 // Default list of friends' device addresses
 uint8_t friendAddresses[] = {2};
+
+// Timing
+#include <LightChrono.h>
 
 // Display
 #include "Display.h"
@@ -34,15 +38,15 @@ Compass compass;
 
 // GPS display refresh timer
 const long displayUpdateGPSInterval = 1000; // milliseconds between refreshing displayed GPS location and clock
-unsigned long displayPreviouslyUpdatedGPS = 0; // the time at which the displayed was last updated
+LightChrono gpsDisplayUpdateTimer;
 
 // LoRa friend ping timer
 const long loraFindFriendInterval = 60000; // milliseconds between pinging a friend for their location
-unsigned long loraPreviouslyFoundFriend = 0; // the time at which a friend was last pinged
+LightChrono loraFindFriendTimer;
 
 // Compass display refresh timer
-const long displayUpdateCompassInterval = 100; // miulliseconds between refreshing displayed compass
-unsigned long displayPreviouslyUpdatedCompass = 0; // the time at which the display was last updated
+const long displayUpdateCompassInterval = 100; // milliseconds between refreshing displayed compass
+LightChrono compassDisplayUpdateTimer;
 
 void setup() {
     delay(500);
@@ -65,6 +69,15 @@ void setup() {
     // Initialize Compass
     compass.setup();
 
+    // Initialize GPS display refresh timer
+    gpsDisplayUpdateTimer.start();
+
+    // Initialize LoRa ping timer
+    loraFindFriendTimer.start();
+
+    // Initialize Compass display refresh timer
+    compassDisplayUpdateTimer.start();
+
     Serial.println(F("Setup Complete!"));
     delay(200);
 }
@@ -79,23 +92,20 @@ void loop() {
 
     if (display.isOn()) {
       // Update displayed GPS location
-      if (currentMillis - displayPreviouslyUpdatedGPS >= displayUpdateGPSInterval) {
-        displayPreviouslyUpdatedGPS = currentMillis;
+      if(gpsDisplayUpdateTimer.hasPassed(displayUpdateGPSInterval, true)) {
         display.drawFix(gps.hasFix());
         display.drawTime(gps.time());
         display.drawLocation(gps.lat(), gps.lon());
       }
 
       // Update displayed compass
-      if (currentMillis - displayPreviouslyUpdatedCompass >= displayUpdateCompassInterval) {
-        displayPreviouslyUpdatedCompass = currentMillis;
+      if (compassDisplayUpdateTimer.hasPassed(displayUpdateCompassInterval, true)) {
         display.drawCompass(compass.heading);
       }
     }
 
     // Request the location of the first friend in our list
-    if (currentMillis - loraPreviouslyFoundFriend >= loraFindFriendInterval) {
-      loraPreviouslyFoundFriend = currentMillis;
+    if (loraFindFriendTimer.hasPassed(loraFindFriendInterval, true)) {
       lora.requestLocationFromDevice(friendAddresses[0]);
     }
 }
