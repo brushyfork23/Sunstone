@@ -9,6 +9,7 @@
 // Adafruit ST7735 and ST7789 Library - TFT Display
 // Adafruit GPS Library - GPS
 // Chrono - Timing
+// Bounce2 - Buttons
 
 // Manually install this library:
 // http://www.airspayce.com/mikem/arduino/RadioHead/ - LoRa
@@ -18,6 +19,21 @@ uint8_t friendAddresses[] = {2};
 
 // Timing
 #include <LightChrono.h>
+
+// Buttons and Switches
+#include <Bounce2.h>
+#define PIN_POWER_SWITCH 16 // A2
+#define PIN_GHOST_MODE_SWITCH 13
+#define PIN_DEVELOPER_SWITCH 15 // A3
+#define PIN_PREVIOUS_BUTTON 12
+#define PIN_NEXT_BUTTON 11
+#define PIN_SELECT_BUTTON 10
+Bounce powerSwitch = Bounce();
+Bounce ghostModeSwitch = Bounce();
+Bounce developerSwitch = Bounce();
+Bounce2::Button previousBtn = Bounce2::Button();
+Bounce2::Button nextBtn = Bounce2::Button();
+Bounce2::Button selectBtn = Bounce2::Button();
 
 // Display
 #include "Display.h"
