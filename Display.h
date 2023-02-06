@@ -152,12 +152,19 @@ public:
 
     void drawLocation(String lat, String lon) {
       tft.setTextColor(ST77XX_WHITE, ST77XX_BLACK);
-      tft.setCursor(12,60);
+      tft.setCursor(12,40);
       tft.print("Lat: ");
       tft.print(lat);
-      tft.setCursor(12,78);
+      tft.setCursor(12,58);
       tft.print("Lon: ");
       tft.print(lon);
+    }
+
+    void drawCompass(float heading) {
+      tft.setTextColor(ST77XX_WHITE, ST77XX_BLACK);
+      tft.setCursor(12,76);
+      tft.print("Heading: ");
+      tft.print(heading,1);
     }
 
     bool isOn() {

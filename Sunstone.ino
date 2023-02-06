@@ -8,6 +8,7 @@
 // Adafruit LC709203F - Battery Monitor
 // Adafruit ST7735 and ST7789 Library - TFT Display
 // Adafruit GPS Library - GPS
+// Adafruit LIS2MDL - Compass
 // Chrono - Timing
 
 // Manually install this library:
@@ -31,6 +32,10 @@ GPS gps;
 #include "LoRa.h"
 LoRa lora;
 
+// Compass
+#include "Compass.h"
+Compass compass;
+
 // GPS display refresh timer
 const long displayUpdateGPSInterval = 1000; // milliseconds between refreshing displayed GPS location and clock
 LightChrono gpsDisplayUpdateTimer;
@@ -38,6 +43,10 @@ LightChrono gpsDisplayUpdateTimer;
 // LoRa friend ping timer
 const long loraFindFriendInterval = 60000; // milliseconds between pinging a friend for their location
 LightChrono loraFindFriendTimer;
+
+// Compass display refresh timer
+const long displayUpdateCompassInterval = 100; // milliseconds between refreshing displayed compass
+LightChrono compassDisplayUpdateTimer;
 
 void setup() {
     delay(500);
@@ -57,11 +66,17 @@ void setup() {
     // Initialize LoRa
     lora.setup();
 
+    // Initialize Compass
+    compass.setup();
+
     // Initialize GPS display refresh timer
     gpsDisplayUpdateTimer.start();
 
     // Initialize LoRa ping timer
     loraFindFriendTimer.start();
+
+    // Initialize Compass display refresh timer
+    compassDisplayUpdateTimer.start();
 
     Serial.println(F("Setup Complete!"));
     delay(200);
@@ -71,6 +86,9 @@ void loop() {
     gps.loop();
     display.loop();
     lora.loop();
+    compass.loop();
+
+    unsigned long currentMillis = millis();
 
     if (display.isOn()) {
       // Update displayed GPS location
@@ -78,6 +96,11 @@ void loop() {
         display.drawFix(gps.hasFix());
         display.drawTime(gps.time());
         display.drawLocation(gps.lat(), gps.lon());
+      }
+
+      // Update displayed compass
+      if (compassDisplayUpdateTimer.hasPassed(displayUpdateCompassInterval, true)) {
+        display.drawCompass(compass.heading);
       }
     }
 
